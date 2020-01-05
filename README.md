@@ -1,56 +1,69 @@
 # vpkg 
-vpkg is a package manager written on [V](https://github.com/vlang/v) for V.
+vpkg is an alternative package manager written on [V](https://github.com/vlang/v) for V.
 
 ## Features
-vpkg's approach is to incorporate the ideas taken from centralized and decentralized package managers.
-- Centralized, popular packages are being listed on [VPM](https://vpm.vlang.io) and on to a single [`registry.json`](https://github.com/v-pkg/registry/tree/master/registry.json) file.
-- Uses a single, JSON file for storing package information as well as it's dependencies. (In this case, [`vpkg.json`](vpkg.json))
-- Packages stored from `registry.json` file can be obtained through a simple `vpkg get [package name]` while the rest uses regular Git URLs.
-- Support for multiple package manifests (`v.mod`, and `vpkg.json`).
-- Support for custom package registries/sources.
+Bringing the best of dependency management on V.
+- **Decentralized.** Download and use packages from other sources aside from VPM and the vpkg registry.
+- **Easy to use.** Set-up, use, and master the commands of vpkg CLI within minutes.
+- **Fast.** Runs perfectly on your potato PC up to the fastest supercomputers.
+- **Interoperable.** Supports `v.mod`, and `.vpm.json` for reading package manifests and managing dependencies.
+- **Light.** Weighs at less than 300kb. Perfect with devices running on tight storage or in low network conditions.
+- **Reliable.** Uses a lockfile mechanism to ensure that all your dependencies work across all of your machines.
 
+## Installation
+### Pre-built binaries
+Install vpkg by downloading the pre-built binaries available found below the release notes of the [latest release](https://github.com/vpkg/releases).
+
+### Building from Source
+For those platforms which aren't included in the available pre-built binaries or would like to compile it by yourself, just clone this repository and build directly with the V compiler with the `-prod` flag.
+```
+git clone https://github.com/vpkg-project/vpkg.git
+cd vpkg/
+v -prod .
+```
 
 ## Running your own registry
-vpkg's own [registry server](https://github.com/v-pkg/registry) is a perfect template to start running your own registry server. Just modify `registry.json` and use any http or web library of your choice to get up and running.
+Use the provided [registry server template](https://github.com/vpkg-project/registry-template) to start running your own registry server. Just modify `registry.json` and use any http or web library of your choice to get up and running.
 
 ## Commands
 ```
-VPkg 0.5
-An alternative package manager for V.
-
-USAGE
-
-vpkg <COMMAND> [ARGS...] [options]
+Usage: vpkg <COMMAND> [ARGS...] [options]
 
 COMMANDS
 
 get [packages]                             Fetch and installs packages from the registry or the git repo.
 help                                       Prints this help message.
 info                                       Show project's package information.
-init [--format=vpkg|vmod]                  Creates a package manifest file into the current directory. Defaults to "vpkg".
+init                                       Creates a package manifest file into the current directory. Defaults to "vpkg".
 install                                    Reads the package manifest file and installs the necessary packages.
-migrate manifest [--format=vpkg|vmod]      Migrate manifest file to a specified format.
+migrate manifest                           Migrate manifest file to a specified format.
+release                                    Release a new version of the module.
 remove [packages]                          Removes packages
-update                                     Updates packages.
-version                                    Prints the Version of this program.
+test                                       Tests the current lib/app.
+update                                     Updates the packages.
+version                                    Prints the version of this program.
 
 OPTIONS
 
---global, -g                               Installs the modules/packages into the `.vmodules` folder.
---force                                    Force download the packages
+--files [file1,file2]                      Specifies other locations of test files (For "test" command)
+--force                                    Force download the packages.
+--format [vpkg|vmod]                       Specifies file format used to init manifest. (For "migrate" and "init" commands)
+--global, -g                               Installs the modules/packages into the ".vmodules" folder.
+--inc [major|minor|patch]                  Increments the selected version of the module/package. (For "release" command)
+--state [state_name]                       Indicates the state of the release (alpha, beta, fix) (For "release" command)
 ```
 
 ## vpkg API
-vpkg can now be imported as a separate module in which you will be able to utilize all vpkg's features into your own programs. It's especially more useful if you want to be able to create your scripts for your project to setup your dependencies without compiling and installing a separate CLI.
+Use vpkg as a module that you can use to integrate into your own programs. Create your own VSH scripts, automate installation, and more without needing for a separate CLI program.
 
-```golang
+```v
 // install.v
 module main
 
-import vpkg.api
+import vpkg.api as vpkg // or import nedpals.vpkg.api as vpkg
 
 fn main() {
-	mut inst := api.new_vpkg('.')
+	mut inst := vpkg.new('.')
 	inst.run(['install'])
 
 	os.system('rm ${os.executable()}')
@@ -62,28 +75,16 @@ fn main() {
 $ v run install.v
 Installing packages
 Fetching nedpals.vargs
-Fetching package from vpm...
 
 vargs@fc193513733c2ed99467f5d903a824ea9087ed52
 1 package was installed successfully.
 ```
 
-## TODO
-- ability to publish and search packages in VPM and VPKG registry.
-- recursive installation of dependencies of packages.
-- unified logging interface
-
-## Installation
-- Clone the repo.
-- Download and install [v-args](https://github.com/nedpals/vargs) and place it into the folder where your vpkg source code is located.
-- Build it from source.
-
-## Building from Source
-```
-git clone https://github.com/v-pkg/vpkg.git
-cd vpkg/
-v -prod .
-```
+## Roadmap
+- ability to publish packages into VPM and the vpkg registry.
+- options for debugging output
+- error handling for better bug tracking and report
+- subversion / svn support
 
 
 ## Copyright
