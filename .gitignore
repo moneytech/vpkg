@@ -4,3 +4,9 @@ vargs/
 *.c
 modules/
 bin/
+fns.txt
+*.exp
+*.ilk
+*.lib
+*.obj
+*.pdb

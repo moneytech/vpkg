@@ -1,10 +1,30 @@
+// vpkg 0.7.1
+// https://github.com/vpkg-project/vpkg
+//
+// Copyright (c) 2020 vpkg developers
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 module api
 
-import (
-    os
-    net.urllib
-    filepath
-)
+import os
+import net.urllib
 
 fn delete_content(path string) {
     os.rm(path)
@@ -59,7 +79,7 @@ fn package_name(path_or_name string) string {
 
 fn rm_test_execs(dir string) {
     mut base_exec_name := ''
-    base_exec_name = filepath.join(os.getwd(), dir.all_before('.v'))
+    base_exec_name = os.join_path(os.getwd(), dir.all_before('.v'))
     if !os.exists('${base_exec_name}.exe') || !os.exists(base_exec_name) { return }
 
     $if windows {
@@ -111,4 +131,17 @@ fn print_status(packages []InstalledPackage, status_type string) {
     }
 
     println('${packages.len} ${package_word} ${desc_word} ${status_type} successfully.')
+}
+
+fn is_empty_str(str string) bool {
+	for bite in str.bytes() {
+		is_empty := (bite >= 7 && bite <= 13) || bite == 32
+        if !is_empty { return false }
+	}
+	return true
+}
+
+fn dirname(path string) string {
+    path_s := path.split(os.path_separator)
+    return path_s[path_s.len-1]
 }

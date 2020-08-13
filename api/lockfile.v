@@ -1,10 +1,30 @@
+// vpkg 0.7.1
+// https://github.com/vpkg-project/vpkg
+//
+// Copyright (c) 2020 vpkg developers
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 module api
 
-import (
-    os
-    json
-    filepath
-)
+import os
+import json
 
 struct Lockfile {
 mut:
@@ -13,7 +33,7 @@ mut:
 }
 
 fn get_lockfile_path(dir string) string {
-    return filepath.join(dir, '.vpkg-lock.json')
+    return os.join_path(dir, '.vpkg-lock.json')
 }
 
 fn read_lockfile(dir string) ?Lockfile {
@@ -45,9 +65,9 @@ fn (lock Lockfile) find_package(name string) int {
     return -1
 }
 
-fn (lock mut Lockfile) regenerate(packages []InstalledPackage, remove bool, dir string) {    
-    if lock.version != Version {
-        lock.version = Version
+fn (mut lock Lockfile) regenerate(packages []InstalledPackage, remove bool, dir string) {    
+    if lock.version != version {
+        lock.version = version
     }
  
     for package in packages {
@@ -60,22 +80,22 @@ fn (lock mut Lockfile) regenerate(packages []InstalledPackage, remove bool, dir 
                 curr_lock_pkg := lock.packages[package_idx]
 
                 lock.packages[package_idx] = InstalledPackage{
-                    name: package.name,
-                    path: package.path,
-                    version: package.version,
-                    url: if package.url == '' || package.url == curr_lock_pkg.url { curr_lock_pkg.url } else { package.url },
-                    method: if package.method == '' || package.method == curr_lock_pkg.method { curr_lock_pkg.method } else { package.method },
+                    name         : package.name
+                    path         : package.path
+                    version      : package.version
+                    url          : if package.url == '' || package.url == curr_lock_pkg.url { curr_lock_pkg.url } else { package.url }
+                    method       : if package.method == '' || package.method == curr_lock_pkg.method { curr_lock_pkg.method } else { package.method }
                     latest_commit: package.latest_commit
                 }
             }
         } else {
             if !remove {
                 lock.packages << InstalledPackage{
-                    name: package.name,
-                    path: package.path,
-                    version: package.version,
-                    url: package.url,
-                    method: package.method,
+                    name         : package.name
+                    path         : package.path
+                    version      : package.version
+                    url          : package.url
+                    method       : package.method
                     latest_commit: package.latest_commit
                 }
             }
@@ -107,16 +127,15 @@ fn (lock mut Lockfile) regenerate(packages []InstalledPackage, remove bool, dir 
 }
 
 fn create_lockfile(dir string) Lockfile {
-    lockfile_json_arr := ['{', '   "version": "${Version}",', '   "packages": []', '}']
-    mut lockfile := os.create(get_lockfile_path(dir)) or { return Lockfile{Version, []InstalledPackage} }
+    lockfile_json_arr := ['{', '   "version": "${version}",', '   "packages": []', '}']
+    mut lockfile := os.create(get_lockfile_path(dir)) or { return Lockfile{version, []InstalledPackage{}} }
     lockfile_json := lockfile_json_arr.join('\n')
     lockfile.write(lockfile_json)
     defer { lockfile.close() }
 
     contents := read_lockfile(dir) or {
-        return Lockfile{Version, []InstalledPackage}
+        return Lockfile{version, []InstalledPackage{}}
     }
 
     return contents
 }
-

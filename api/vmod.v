@@ -1,4 +1,27 @@
-// some of the code snippets taken from: https://github.com/vlang/v/blob/mtokenser/compiler/scanner.v
+// vpkg 0.7.1
+// https://github.com/vpkg-project/vpkg
+//
+// Copyright (c) 2020 vpkg developers
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
+// some of the code snippets taken from: https://github.com/vlang/v/blob/master/compiler/scanner.v
 
 module api
 
@@ -51,8 +74,8 @@ fn tokenize(t_type Lexeme, val string) Token {
     return Token{t_type, val}
 }
 
-fn (s mut VModScanner) skip_whitespace() {
-	for s.pos < s.text.len && s.text[s.pos].is_white() {
+fn (mut s VModScanner) skip_whitespace() {
+	for s.pos < s.text.len-1 && s.text[s.pos].is_space() {
 		s.pos++
 	}
 }
@@ -65,7 +88,7 @@ fn is_name_alpha(chr byte) bool {
     return chr.is_letter() || chr == `_`
 }
 
-fn (s mut VModScanner) create_string() string {
+fn (mut s VModScanner) create_string() string {
 	mut start := s.pos
 	s.inside_text = false
 	slash := `\\`
@@ -96,7 +119,7 @@ fn (s mut VModScanner) create_string() string {
 	return lit
 }
 
-fn (s mut VModScanner) create_identifier() string {
+fn (mut s VModScanner) create_identifier() string {
 	start := s.pos
 	for {
 		s.pos++
@@ -115,7 +138,7 @@ fn (s mut VModScanner) create_identifier() string {
 
 fn get_array_contents(tokens []Token, start_pos int) []string {
     mut inside_array := true
-    mut contents := []string
+    mut contents := []string{}
 
     for i := start_pos; inside_array != false; i++ {
         if token_type(tokens[i].@type) == 'str' {
@@ -149,7 +172,7 @@ fn token_type(t_type Lexeme) string {
     return token_type
 }
 
-fn (s mut VModScanner) scan() Token {
+fn (mut s VModScanner) scan() Token {
     if s.started && s.pos != s.text.len-1 {
         s.pos++
     }
@@ -166,19 +189,19 @@ fn (s mut VModScanner) scan() Token {
 
     s.skip_whitespace()
 
-    char := s.text[s.pos]
+    char_ := s.text[s.pos]
     mut next_char := `\0`
 
     if s.pos + 1 < s.text.len {
         next_char = s.text[s.pos + 1]
     }
 
-    if is_name_alpha(char) {
+    if is_name_alpha(char_) {
         name := s.create_identifier()
-        _next := if s.pos + 1 < s.text.len { s.text[s.pos + 1] } else { `\0` }
+        next_ := if s.pos + 1 < s.text.len { s.text[s.pos + 1] } else { `\0` }
 
         if s.inside_text {
-            if _next == `\'` {
+            if next_ == `\'` {
                 s.pos++
                 s.inside_text = false
             }
@@ -195,7 +218,7 @@ fn (s mut VModScanner) scan() Token {
         }
     }
 
-    match char {
+    match char_ {
         `{` {
             if s.inside_text { return s.scan() }
             return tokenize(.lcbr, '')
@@ -232,8 +255,8 @@ fn (s mut VModScanner) scan() Token {
     return tokenize(.eof, '')
 }
 
-fn (s mut VModScanner) parse() VModPkgManifest {
-    mut tokens := []Token
+fn (mut s VModScanner) parse() VModPkgManifest {
+    mut tokens := []Token{}
     mut pkg_info := VModPkgManifest{}
 
     mut has_started := false

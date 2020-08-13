@@ -1,9 +1,29 @@
+// vpkg 0.7.1
+// https://github.com/vpkg-project/vpkg
+//
+// Copyright (c) 2020 vpkg developers
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
+
 module api
 
-import (
-    os
-    filepath
-)
+import os
 
 pub fn (vpkg Vpkg) migrate_manifest() {
     m_type := if 'format' in vpkg.options { vpkg.options['format'] } else { 'vpkg' }
@@ -11,7 +31,7 @@ pub fn (vpkg Vpkg) migrate_manifest() {
     migrate_manifest_file(vpkg.dir, vpkg.manifest, m_type)
 }
 
-pub fn (vpkg mut Vpkg) release_module_to_git() {
+pub fn (mut vpkg Vpkg) release_module_to_git() {
     if 'inc' in vpkg.options {
         state := if 'state' in vpkg.options { vpkg.options['state'] } else { '' }
 
@@ -39,9 +59,9 @@ pub fn (vpkg Vpkg) test_package() {
         separator = '\\'
     }
 
-    package_path := filepath.join(pwd_var, '..' + separator)
-    package_name := filepath.filename(os.getwd())
-    mut files := []string
+    package_path := os.join_path(pwd_var, '..' + separator)
+    package_name := dirname(os.getwd())
+    mut files := []string{}
 
     if os.exists('${package_name}_test.v') {
         files << '${package_name}_test.v'
@@ -69,7 +89,7 @@ pub fn (vpkg Vpkg) test_package() {
         if os.is_dir(file) {
             folder_contents := os.ls(file) or { return }
             for f in folder_contents {
-                rm_test_execs(filepath.join(file, f))
+                rm_test_execs(os.join_path(file, f))
             }
         } else {
             rm_test_execs(file)
@@ -78,7 +98,7 @@ pub fn (vpkg Vpkg) test_package() {
 }
 
 pub fn (vpkg Vpkg) create_manifest_file() {
-    pkg_name := filepath.filename(vpkg.dir)
+    pkg_name := dirname(vpkg.dir)
     mut manifest_filename := 'vpkg.json'
     mut mw := new_vpkg_json()
 
@@ -105,7 +125,7 @@ pub fn (vpkg Vpkg) create_manifest_file() {
 
     mw.close()
 
-    mut manifest_data := os.create(filepath.join(vpkg.dir, manifest_filename)) or {
+    mut manifest_data := os.create(os.join_path(vpkg.dir, manifest_filename)) or {
         eprintln('Package manifest file was not created successfully.')
         return
     }
@@ -117,7 +137,7 @@ pub fn (vpkg Vpkg) create_manifest_file() {
     println('Package manifest file was created successfully.')
 }
 
-pub fn (vpkg mut Vpkg) install_packages(dir string) {
+pub fn (mut vpkg Vpkg) install_packages(dir string) {
     println('Installing packages')
     pkg_info := vpkg.manifest
     packages := pkg_info.dependencies
@@ -125,7 +145,7 @@ pub fn (vpkg mut Vpkg) install_packages(dir string) {
 }
 
 pub fn (vpkg Vpkg) remove_packages(packages []string) {
-    mut removed_packages := []InstalledPackage
+    mut removed_packages := []InstalledPackage{}
     mut lockfile := read_lockfile(vpkg.dir) or {
         println(err)
         return
@@ -133,7 +153,7 @@ pub fn (vpkg Vpkg) remove_packages(packages []string) {
 
     for package in packages {
         pkg_name := if package.starts_with('v-') { package.all_after('v-') } else { package }
-        status := delete_package_contents(filepath.join(vpkg.install_dir, pkg_name))
+        status := delete_package_contents(os.join_path(vpkg.install_dir, pkg_name))
 
         if status { removed_packages << InstalledPackage{ name: package } }
     }
@@ -143,7 +163,7 @@ pub fn (vpkg Vpkg) remove_packages(packages []string) {
 }
 
 pub fn (vpkg Vpkg) update_packages() {    
-    mut updated_packages := []InstalledPackage
+    mut updated_packages := []InstalledPackage{}
     println('Fetching lockfile')
     mut lockfile := read_lockfile(vpkg.dir) or { return }
     println('Updating packages')
@@ -151,7 +171,7 @@ pub fn (vpkg Vpkg) update_packages() {
     for pkg in lockfile.packages {
         current_hash := if pkg.latest_commit.len != 0 { pkg.latest_commit } else { pkg.version }
         pkg_name := package_name(pkg.name)
-        pkg_location := filepath.join(vpkg.install_dir, pkg_name)
+        pkg_location := os.join_path(vpkg.install_dir, pkg_name)
         mut latest_hash := current_hash
         fetch_pkg_info := FetchMethod{ dir: pkg_location }
         latest_hash = fetch_pkg_info.check_version(pkg.method)
@@ -159,10 +179,10 @@ pub fn (vpkg Vpkg) update_packages() {
 
         if current_hash != latest_hash {
             updated_packages << InstalledPackage{
-                name: pkg.name,
-                version: if pkg_manifest.version.len != 0 { pkg_manifest.version } else { latest_hash },
-                url: pkg.url,
-                method: pkg.method
+                name   : pkg.name
+                version: if pkg_manifest.version.len != 0 { pkg_manifest.version } else { latest_hash }
+                url    : pkg.url
+                method : pkg.method
             }
         }
     }
@@ -171,10 +191,10 @@ pub fn (vpkg Vpkg) update_packages() {
     print_status(updated_packages, 'updated')
 }
 
-pub fn (vpkg mut Vpkg) get_packages(packages []string, is_final bool) []InstalledPackage {
-    mut installed_packages := []InstalledPackage
+pub fn (mut vpkg Vpkg) get_packages(packages []string, is_final bool) []InstalledPackage {
+    mut installed_packages := []InstalledPackage{}
     mut lockfile := read_lockfile(vpkg.dir) or { return installed_packages }
-    mut deps := []string
+    mut deps := []string{}
 
     for pkg in packages {
         // pkg_arr := pkg.split('@')
@@ -199,9 +219,7 @@ pub fn (vpkg mut Vpkg) get_packages(packages []string, is_final bool) []Installe
     
     if is_final {
         for pkg in packages {
-            pkg_idx := vpkg.manifest.dependencies.index(pkg)
-
-            if pkg_idx != -1 {
+            if !vpkg.manifest.is_exist(pkg) {
                 vpkg.manifest.dependencies << pkg
             }
         }
@@ -215,6 +233,29 @@ pub fn (vpkg mut Vpkg) get_packages(packages []string, is_final bool) []Installe
     }
 
     return installed_packages
+}
+
+pub fn (vpkg Vpkg) link(dir string) {
+    name := if !is_empty_str(vpkg.manifest.name) {vpkg.manifest.name} else {dirname(dir)}
+    target := os.join_path(global_modules_dir, name)
+    os.symlink(dir, target) or {
+        if C.errno == 2 {
+            os.mkdir(global_modules_dir) or { return }
+        }
+        vpkg.link(dir)
+    }
+    println('Successfully linked the module as $name')
+}
+
+pub fn (vpkg Vpkg) unlink(dir string) {
+    name := if !is_empty_str(vpkg.manifest.name) {vpkg.manifest.name} else {dirname(dir)}
+    target := os.join_path(global_modules_dir, name)
+    if os.exists(target) {
+        os.rm(os.join_path(global_modules_dir, name))
+    }
+    if !os.exists(target) {
+        println('Successfully unlinked $name')
+    }
 }
 
 pub fn (vpkg Vpkg) show_package_information() {
@@ -246,9 +287,9 @@ pub fn (vpkg Vpkg) show_package_information() {
 }
 
 fn (vpkg Vpkg) show_version() {
-    println('vpkg ${Version} for ${os.user_os()}')
+    println('vpkg ${version} for ${os.user_os()}')
     println('Repo: https://github.com/vpkg-project/vpkg \n')
-    println('2019 (c) Ned Palacios and it\'s contributors.')
+    println('2020 (c) vpkg developers and it\'s contributors.')
 }
 
 fn (vpkg Vpkg) show_help() {
@@ -256,22 +297,24 @@ fn (vpkg Vpkg) show_help() {
     println('\nCOMMANDS\n')
 
     println('get [packages]                             Fetch and installs packages from the registry or the git repo.')
-    println('help                                       Prints this help message.')
+    println('help                                       Show this help message.')
     println('info                                       Show project\'s package information.')
-    println('init                                       Creates a package manifest file into the current directory. Defaults to "vpkg".')
-    println('install                                    Reads the package manifest file and installs the necessary packages.')
+    println('init                                       Create a package manifest file into the current directory. Defaults to "vpkg".')
+    println('install                                    Read the package manifest file and installs the necessary packages.')
+    println('link                                       Symlink current module/package to ".vmodules" folder.')
     println('migrate manifest                           Migrate manifest file to a specified format.')
     println('release                                    Release a new version of the module.')
-    println('remove [packages]                          Removes packages')
-    println('test                                       Tests the current lib/app.')
-    println('update                                     Updates the packages.')
-    println('version                                    Prints the version of this program.')
+    println('remove [packages]                          Remove packages')
+    println('test                                       Test the current lib/app.')
+    println('update                                     Update the packages.')
+    println('unlink                                     Remove the symlink of current module/package from ".vmodules" folder.')
+    println('version                                    Show the version of this program.')
 
     println('\nOPTIONS\n')
-    println('--files [file1,file2]                      Specifies other locations of test files (For "test" command)')
+    println('--files [file1,file2]                      Specifiy other locations of test files (For "test" command)')
     println('--force                                    Force download the packages.')
-    println('--format [vpkg|vmod]                       Specifies file format used to init manifest. (For "migrate" and "init" commands)')
-    println('--global, -g                               Installs the modules/packages into the ".vmodules" folder.')
-    println('--inc [major|minor|patch]                  Increments the selected version of the module/package. (For "release" command)')
-    println('--state [state_name]                       Indicates the state of the release (alpha, beta, fix) (For "release" command)')
+    println('--format [vpkg|vmod]                       Specifiy file format used to init manifest. (For "migrate" and "init" commands)')
+    println('--global, -g                               Install the modules/packages into the ".vmodules" folder.')
+    println('--inc [major|minor|patch]                  Increment the selected version of the module/package. (For "release" command)')
+    println('--state [state_name]                       Indicate the state of the release (alpha, beta, fix) (For "release" command)')
 }

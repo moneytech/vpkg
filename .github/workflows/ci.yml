@@ -1,0 +1,17 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  ubuntu-latest:
+    runs-on: ubuntu-latest
+    env:
+      VFLAGS: -showcc -cg -cc gcc
+    steps:
+      - name: Installing V latest
+        run: cd ~; git clone https://github.com/vlang/v.git; cd v; make; sudo ./v symlink; v version
+      - uses: actions/checkout@v1
+      - name: Compiling
+        run: v .
+      - name: Testing
+        run: v test tests
+      - name: Checking vpkg description
+        run: v run ./.github/workflows/check-desc.v

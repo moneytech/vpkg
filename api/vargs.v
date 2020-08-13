@@ -1,9 +1,25 @@
-/**
- * vargs 0.4.2
- * https://github.com/nedpals/vargs
- * 
- * (c) 2019 Ned Palacios and its contributors.
- */
+// vargs 0.4.2
+// https://github.com/nedpals/vargs
+//
+// Copyright (c) 2020 vpkg Ned Palacios
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
 
 module api
 
@@ -25,7 +41,7 @@ fn starts_with_hypen(v string) bool {
     return v.starts_with('-') || v.starts_with('--')
 }
 
-fn (v mut Args) insert_option(name string, val string) {
+fn (mut v Args) insert_option(name string, val string) {
     v.options[name] = if name in v.options {
         '${v.options[name]},${val}'
     } else {
@@ -35,7 +51,7 @@ fn (v mut Args) insert_option(name string, val string) {
 
 pub fn vargs_parse(a []string, start int) Args {
     args := a[start..a.len]
-    mut parsed := Args{'', map[string]string, []string}
+    mut parsed := Args{}
 
     for i, curr in args {
         next := if i+1 > args.len-1 { '' } else { args[i+1] }
@@ -75,7 +91,9 @@ pub fn (v Args) array_option(name string) []string {
 
 pub fn (v Args) str() string {
     mut opts := v.options.str().split_into_lines()
-    for i, el in opts { opts[i] = el.trim_space() }
+    for i, el in opts { 
+        opts[i] = el.trim_space()
+    }
     opts_str := opts.join(' ')
 
     return '\{ command: "${v.command}", options: ${opts_str}, unknown: ${v.unknown.str()} \}'
